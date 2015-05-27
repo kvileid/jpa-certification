@@ -1,5 +1,7 @@
 package no.kvileid.jpa;
 
+import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -9,12 +11,16 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
+import org.hibernate.EmptyInterceptor;
+import org.hibernate.EntityMode;
 import org.hibernate.boot.registry.classloading.internal.ClassLoaderServiceImpl;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.jpa.AvailableSettings;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 import org.hibernate.tool.hbm2ddl.SchemaExport;
+
+import sun.misc.Unsafe;
 
 public class PersistenceUtil {
     private static EntityManager entityManager;
@@ -48,6 +54,7 @@ public class PersistenceUtil {
     private static EntityManagerFactory createFactory(Class<?>... entityClasses) {
         Map<String, Object> props = new HashMap<>();
         props.put(AvailableSettings.LOADED_CLASSES, Arrays.asList(entityClasses));
+//        props.put(AvailableSettings.INTERCEPTOR, new MyInterceptor());
         return Persistence.createEntityManagerFactory("JpaCert", props);
     }
 
@@ -56,6 +63,7 @@ public class PersistenceUtil {
                 PersistenceUnitTransactionType.RESOURCE_LOCAL);
         ParsedPersistenceXmlDescriptor descriptor = parser.doResolve(new HashMap<>()).get(0);
 
+        
         Configuration cfg = new Configuration();
         cfg.setProperty("hibernate.connection.driver_class", getProperty(descriptor, AvailableSettings.JDBC_DRIVER));
         cfg.setProperty("hibernate.connection.url", getProperty(descriptor, AvailableSettings.JDBC_URL));
@@ -66,10 +74,42 @@ public class PersistenceUtil {
         for (Class<?> clazz : entityClasses) {
             cfg.addAnnotatedClass(clazz);
         }
-        new SchemaExport(cfg).create(true, true);
+        new SchemaExport(cfg).create(false, true);
     }
 
     private static String getProperty(ParsedPersistenceXmlDescriptor descriptor, String propertyName) {
         return descriptor.getProperties().getProperty(propertyName);
+    }
+
+    public static void clear() {
+        entityManager.clear();
+    }
+    
+    public static class MyInterceptor extends EmptyInterceptor {
+        @Override
+        public Object instantiate(String entityName, EntityMode entityMode, Serializable id) {
+            return allocateInstance(entityName);
+        }
+
+        private Object allocateInstance(String entityName) {
+            try {
+            Class<?> clazz = Class.forName(entityName);
+            return getUnsafe().allocateInstance(clazz);
+            } catch (InstantiationException |  ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        
+        private Unsafe getUnsafe() {
+            try {
+
+                Field singleoneInstanceField = Unsafe.class.getDeclaredField("theUnsafe");
+                singleoneInstanceField.setAccessible(true);
+                return (Unsafe) singleoneInstanceField.get(null);
+
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }
