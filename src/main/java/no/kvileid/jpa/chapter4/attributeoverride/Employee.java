@@ -24,5 +24,6 @@ public class Employee {
 
     public static void main(String[] args) {
         PersistenceUtil.initialize(Employee.class);
+        PersistenceUtil.closeSession();
     }
 }

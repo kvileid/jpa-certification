@@ -25,9 +25,10 @@ import sun.misc.Unsafe;
 public class PersistenceUtil {
     private static EntityManager entityManager;
 
-    public static void initialize(Class<?>... entityClasses) {
+    public static EntityManager initialize(Class<?>... entityClasses) {
         recreateDatabase(entityClasses);
         entityManager = createFactory(entityClasses).createEntityManager();
+        return entityManager;
     }
 
     public static EntityManager beginTransaction() {
@@ -51,10 +52,15 @@ public class PersistenceUtil {
         entityManager.getTransaction().rollback();
     }
 
+    public static EntityManager reinitialise(Class<?>... entityClasses) {
+        EntityManagerFactory factory = createFactory(entityClasses);
+        entityManager = factory.createEntityManager();
+        return entityManager;
+    }
+    
     private static EntityManagerFactory createFactory(Class<?>... entityClasses) {
         Map<String, Object> props = new HashMap<>();
         props.put(AvailableSettings.LOADED_CLASSES, Arrays.asList(entityClasses));
-//        props.put(AvailableSettings.INTERCEPTOR, new MyInterceptor());
         return Persistence.createEntityManagerFactory("JpaCert", props);
     }
 
