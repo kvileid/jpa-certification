@@ -14,9 +14,6 @@ public class Department {
     private Long id;
     private String name;
 
-    protected Department() {
-    }
-
     public Department(String name) {
         this.name = name;
     }

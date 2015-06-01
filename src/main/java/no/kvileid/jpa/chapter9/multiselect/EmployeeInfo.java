@@ -1,14 +1,15 @@
-package no.kvileid.jpa.chapter8.model;
-
-import javax.persistence.Entity;
+package no.kvileid.jpa.chapter9.multiselect;
 
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-@Entity
-public class DesignProject extends Project {
-    public DesignProject(String name) {
-        super(name);
+public class EmployeeInfo {
+    private String name;
+    private Integer salary;
+
+    public EmployeeInfo(String name, Integer salary) {
+        this.name = name;
+        this.salary = salary;
     }
     
     public String toString() {

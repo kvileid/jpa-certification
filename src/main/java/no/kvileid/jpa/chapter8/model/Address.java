@@ -14,9 +14,6 @@ public class Address {
     private Long id;
     private String street;
     
-    protected Address() {
-    }
-
     public Address(String street) {
         this.street = street;
     }

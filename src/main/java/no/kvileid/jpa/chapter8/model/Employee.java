@@ -30,9 +30,6 @@ public class Employee {
     @OneToOne(cascade = CascadeType.ALL)
     private Address address;
 
-    public Employee() {
-    }
-
     public Employee(String name, Long salary, Department department, Project project, Address a) {
         this.name = name;
         this.salary = salary;
