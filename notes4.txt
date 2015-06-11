@@ -1,0 +1,58 @@
+JPQL
+----
+ANY, ALL, SOME only with subqueries
+EXISTS also only with subqueries
+
+ANY == SOME
+
+Transaction
+----------
+Container Managed Transaction uses UserTransaction
+Stand-alone uses EntityTransaction (resource-local) or UserTransaction (container managed transaction)
+
+An entity manager whose underlying transactions are controlled by the application through the EntityTransaction API is termed as resource-local entity manager.
+A container-managed entity manager must be a JTA entity manager.
+
+Transaction Exception
+----------
+LockTimeoutException+++ will not rollback transaction, but will rollback current statement.
+
+Entity mapping
+-----
+The mappedBy attribute is specified on the non-owning side of the relationship and the foreignkey column is created on the owning side of the relationship.
+
+Criteria API (Order By)
+-----
+q.orderBy(..) accepts Order Object or list of order objects
+
+ArrayList<Order> orderBy = new ArrayList<Order>(); 
+orderBy.add(criteriaBuilder.asc(presentations.get("marksObtained"))); 
+q.orderBy(orderBy);
+
+Transaction
+-------------
+@TransactionAttribute(SUPPORTS)
+public class BaseClass {
+    public void methodA() { }
+}
+
+@Stateless
+public class ABean extends BaseClass {
+    public void methodA() { }
+}
+
+Here methodA in ABean gets REQUIRED.
+If subclass overrides method of a superclass, the @TransactionAttribute value of the subclass (and not of the super class even if the superclass has a @TransactionAttribute) is used for all its methods.
+
+Entity mapping
+---------
+The behavior is unspecified if mapping annotations are applied to both persistent fields and properties.
+
+JPQL
+----
+SELECT clause must be specified to return only single-valued expressions. 
+The query below is therefore invalid: 
+ SELECT o.lineItems from Order AS o
+
+The correct query would be:
+ SELECT li from Order o inner join o.lineItems li

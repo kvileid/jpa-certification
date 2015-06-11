@@ -1,0 +1,125 @@
+Entity class
+-----------
+Must have public or protected no-arg constructor.
+Instance variables may not be public.
+Does NOT need to implement Seriablizable
+
+
+Container
+---------
+Injected EntityManager can be extended|transacted
+Only JTA transaction though.
+And extended only in Statful session beans
+
+Cache
+-----
+In persistence.xml
+<shared-cache-mode>
+    NOT_SPECIFIED
+    ALL
+    NONE
+    DISABLE_SELECTIVE
+    ENABLE_SELECTIVE
+</shared-cache-mode>
+
+
+JPQL queries
+----------
+Functions available for JPQL queries, can be used in select and where
+String Functions:
+CONCAT( String, String) returns a String
+SUBSTRING( String, start, length) returns a String
+LOCATE( String, String [, start]) returns an int
+LENGTH( String) returns an int
+LOWER
+UPPER
+TRIM 
+
+Arithmetic Functions:
+ABS( number) returns a number (int, float, or double)
+SQRT( double) returns a double
+MOD
+SIZE  <-- Size of collection. Must be a collection select size(s) from Student s NOT OK, but select size(s.presentations) from Student s is OK
+INDEX
+
+Date Functions:
+CURRENT_DATE 
+CURRENT_TIME 
+CURRENT_TIMESTAMP
+
+Criteria API
+------------
+Note for CriteriaQuery the order of where and select does not matter.
+CriteriaQuery<CustOrder> cq = cb.createQuery(CustOrder.class);
+.
+.
+cq.where(..).select(..)
+cq.select(..).where(..)
+
+Entity lifecycle
+-----------
+note that it is implementation-dependent as to whether @PreUpdate and @PostUpdate callbacks occur when an entity is persisted and subsequently modified in a single transaction.
+And when an entity is modified and subsequently removed within a single transaction.
+
+EJB
+----
+If a Bean encounters a system exception it is discarded. System exceptions are RuntimeExceptions (not annotated with @ApplicationException)
+
+Entity Relationships
+---------------
+CascadeType.REMOVE (not Delete)
+orphanRemove (not orphanDelete)
+
+Also CascadeType.REMOVE only on One, ie OneToOne and OneToMany, not ManyTo* (if done unspecified result)
+
+If no mapping on a class (not @Entity or @Embeddable), it must be Serializable for it to be included as a relation in another class
+
+Collections
+----------
+When map VALUE is basic type or embeddable, the ElementCollection annotation is used
+When map VALUE is entity, OneToMany or ManyToMany annotation is used. 
+
+EntityManager
+----------
+<< Container managed entityManager
+@PersistenceContext 
+EntityManager em;
+
+<< Application managed entityManager
+@PersistenceUnit 
+EntityManagerFactory emf;
+
+FlushMode
+---------
+AUTO any updates done to entities must be part of query result. Normally ensured by flush (but not required)
+COMMIT it may wait with flush until commit, but it may do before
+
+So AUTO clearly defined, Commit is not clearly defined 
+
+Criteria API
+---------
+When selecting multiple entities or multiple individual fields, then must create a tuple explicitly using cb.tuple inside q.select() or use q.multiselect().
+
+q.multiselect(customer.get(Customer_.state), cb.count(orders) );
+q.select(cb.tuple(customer.get(Customer_.state), cb.count(orders)));
+
+Not
+q.select(customer.get(Customer_.state), cb.count(orders) );
+
+The following is same, however last more typesafe.
+CriteriaQuery q = cb.createQuery();
+CriteriaQuery<Tuple> q = cb.createTupleQuery();
+CriteriaQuery<CustOrder> cq = cb.createQuery(CustOrder.class);
+
+Transactions
+------------
+Application Exceptions, unless having rollback attribute set to true [ @ApplicationException(rollback=true) ], do not flag the transaction to be rolled back
+
+Ordering
+------
+@OrderBy - spesifiserer order when querying on a persistent property.
+@OrderBy("quantity") orders by quantity
+@OrderBy orders by primary key
+
+@OrderColumn introduces a column, name of column may be specified (or default is created). Column must be heltall.
+

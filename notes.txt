@@ -1,0 +1,187 @@
+Locking
+-------
+LockModeTypes
+
+Optimistic (må ha Version)
+- Optimistic (Read)
+- Optimistic_Force_Increment (Write)
+
+Pessimistic
+- Pessimistic_Read
+- Pessimistic_Write
+- Pessimistic_Force_Increment
+
+None
+
+
+OrphanRemoval
+------------
+orphanRemoval bare for single source OneToOne og OneToMany.
+orphanRemoval=true betyr også CascadeType.REMOVE
+
+NB: Finnes ikke CascadeType.DELETE, men CascadeType.REMOVE
+
+Entity
+-----
+Entity class can not be final, and neither can instance variables.
+
+Metamodel
+---------
+X extends S (entity or mapped superclass) then X_ extends S_
+
+Attributes
+Non-collection
+-SingularAttribute<X,Y> y;   --Note X is Class and Y is attribute. e.g SingularAttribute<Employee, String> y;
+
+Collection
+-CollectionAttribute<X,Z> z;
+-SetAttribute<X,Z> z
+-ListAttribute<X,Z> z;
+-MapAttribute<X,K,Z> z; // K is key, Z is value
+
+Persistence.xml
+----
+Kan oppgi <class> i persistence.xml. Bare disse blir plukket opp i Java SE. Men for container managed så vil også classpath bli scannet, så samt <exclude-unlisted-classes/> ikke er oppgitt. 
+
+Kan oppgi default <cascade-persist/> i persistence.xml som vil aktivere cascade persist for all entities. Kan ikke overrides.
+
+If orm.xml does not contain <xml-mapping-metadata-complete/> element, the information contained in annotation is added to the information contained in the xml.
+
+Exceptions i transactions
+---------
+Les i JPA bok om rationale for disse. It is stated that this is important for exam.
+Causing rollback
+-EntityExistsException
+-EntityNotFoundException
+-OptimisticLockException
+-PessimisticLockException
+
+Not causing rollback
+-NoResultException
+-NonUniqueResultException
+-LockTimeoutException
+-QueryTimeoutException
+
+Begynner på N eller contains Timeout 'Not causing rollback'.
+
+Også hva er System exception og Application exception (ApplicationException is annotated with @ApplicationException)
+System exception is wrapped in TransactionRolledBackException, transaction rolled back.
+Application exception propagates to client, transaction not rolled back.
+
+Når bean ikke kjører i transaction så vil system exception bli wrapped i EJBException
+
+Mapping of Maps
+---------------
+Here må det leses og gjøres oppgaver.
+
+Bean managed transaction demarcation
+-------------------
+Interface javax.transaction.UserTransaction
+  void begin()
+  void commit()
+  int getStatus()
+  void rollback()
+  void setRollbackOnly()
+  void setTransactionTimeout(int seconds)
+
+Note ingen isRollbackOnly, må bruke getStatus()
+
+@Stateless
+@TransactionManagement(BEAN)
+public class ExampleBean {
+    @Resource
+    private SessionContext ctx;
+ 
+    public void foo() {
+        UserTransaction utx = ctx.getUserTransaction();
+ 
+        utx.begin();
+        // Do work
+        utx.commit();
+    }
+}
+
+If @TransactionManagement(CONTAINER), will get exception if ctx.getUserTransaction()
+
+PersistenceUtil
+---------------
+PersistenceUtil.isLoaded(Object entity) - sjekker at entity er loaded og at alle EAGER dependencies er loaded. Men ikke LAZY dependencies
+PersistenceUtil.isLoaded(Object entity, String attributeName) - sjekker at en attributt er loaded. False hvis entity eller attributt ikke er loaded
+
+Transactions
+------------
+Application:
+Using EntityTransaction API is a resource-local entityManager
+
+Container:
+Must be a JTA entityManager
+If entityManager is injected (by container) then is a JTA entityManager
+
+Ordering
+-----
+The ordering of NULL values is not specified.
+
+Persistence Context
+------
+An application managed persistence context is always an extended persistence context. Can never be TRANSACTION.
+
+Application Managed persistence context - It is always an extended persistence context. In other words, the scope of the persistence context of an application-managed entity manager is always extended.
+
+Container Managed persistence context - It can be transaction scoped or extended. Extended bare i Statful session beans.
+
+Mapping collections
+------------
+Collection of embeddable types
+@ElementCollection
+@CollectionTable
+@AttributeOverride
+List<Address> addresses
+
+Collection of Primitives
+@ElementCollection
+@CollectionTable
+@Column
+List<String> names
+
+Note: only one side of a many-to-many relationship may have Map
+
+Criteria API.
+----------
+Sjekk hva er correlate brukt i Q63.
+
+Gode tips fra Entuware
+While formulating a Criteria API query, it is best to build a regular SQL query on paper and then think about converting it to criteria API query. In this case, all you really need is:
+
+SELECT o.*
+FROM CustOrder o,  OrderLineItem oli
+WHERE o.ID=oli.CUSTORDER_ID
+and oli.QUANTITY = (select max(QUANTITY) from OrderLineItem)
+
+1. SELECT o.* implies:
+
+           CriteriaQuery<CustOrder> cq = cb.createQuery(CustOrder.class);
+           Root<CustOrder> custOrderRoot = cq.from(CustOrder.class);
+           cq.select(custOrderRoot).distinct(true);
+
+2. FROM CustOrder o,  OrderLineItem oli
+WHERE o.ID=oli.CUSTORDER_ID
+
+implies:
+            Join<CustOrder, OrderLineItem> oliJoin = custOrderRoot.join("lineItems");            
+           
+3. (select max(QUANTITY) from OrderLineItem)
+
+implies:
+            Subquery<Integer> sq = cq.subquery(Integer.class);
+            Root<OrderLineItem> sqRoot = sq.from(OrderLineItem.class);
+            sq.select(cb.max(sqRoot.get(OrderLineItem_.quantity)));
+
+4. oli.QUANTITY = 
+
+implies
+
+           cq.where( cb.equal(oliJoin.get(OrderLineItem_.quantity),  sq) );
+
+As you can see, the subquery is totally independent here so there is no need for using correlate.
+
+

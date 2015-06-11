@@ -1,0 +1,99 @@
+JPQL
+----
+SELECT s.name FROM Student s, Program p where s.subjectid=p.subjectid
+
+If not specifying the where clause then we get a cartesian product.
+
+This theta join type is similar to using explicitly defined join.
+select s.name FROM Student s join Program p on s.subjectid=p.subjectid
+
+Locking
+-------
+Locking an entity may lock more rows from more tables. Typically in JOINED inheritance.
+Also locks foreign keys that locked rows encounter.
+
+Cache
+-----
+Cache.evict(class) applies to all the entities of the given class and its subclasses.
+
+Entity Lifecycle
+----------
+A single entity listener or entity cannot define multiple lifecycle callback methods for the same lifecycle event.
+E.g. not two methods with @PrePersist in same class.
+
+Criteria API
+-----------
+Join<Student, Presentation>  j = student.join("presentations", JoinType.LEFT);
+Fetch<Student, Presentation> f = student.fetch("presentations", JoinType.LEFT);
+
+Gives same result, but result from fetch variant can not be used later.
+Possible JoinTypes (Note not fetch)
+LEFT
+INNER
+RIGHT 
+
+Exception handling
+--------------
+Bean A with methodA()
+Bean B with methodB()
+
+methodA()->methodB() and methodB() throws system exception. Instance of Bean A will be discarded if no error handling. Instance of Bean B will be discarded. 
+Note that in general, any system exception thrown by an EJB would cause the respective instance to be discarded. However, that does not apply to singleton beans, because they must remain active until the shutdown of the application
+
+
+JPQL
+-----
+Subqueries are allowed in HAVING and WHERE clauses.
+
+Criteria API
+----------
+CriteriaBuilder is used to create CriteriaQuery.
+EntityManager is used to create Query/TypedQuery.
+
+CriteriaBuilder takes a Class object as a parameter, while EntityManager takes a String or CriteriaQuery.
+Query q = em.createQuery("select ...");                              // JPQL
+TypedQuery<Student> q = em.createQuery("select ...", Student.class); // JPQL
+TypedQuery<Student> q = em.createQuery(criteriaQuery);               // Criteria API
+
+
+CriteriaQuery and Query/TypedQuery are very different interfaces and are meant for entirely different purposes.
+
+CriteriaQuery is basically an object graph of the various conditions that you put in while building a query. Building a CriteriaQuery object is like building the sql string that you can fire later.
+
+While Query/TypeQuery are used to control the final query execution i.e. setting the actual parameter values, fetching results from the database, locking rows etc. 
+
+
+Cahce
+-----
+@Cacheable element applies to the given entity and its subclasses unless subsequently overridden by a subclass
+
+JPQL
+----
+select p from Employee e join e.phones p;
+is equal to
+select p from Employee e, IN(e.phones) p
+
+Single valued association fields 1-1 mellom Employee and Department. Following is equal (using navigation):
+select d from Employee e join e.department d
+select e.department from Employee e
+
+So can use navigation through single valued associations. Not through collections. For collections we must use join.
+select p from Employee e join e.phones p;
+
+Entity Manager
+--------
+Managed entities of entityManager will become detached if transaction is rolled back.
+
+Query
+---------
+Query is not typed, so not Query<T>
+But TypedQuery<T>
+
+Exact (e.g. int) and approximate (e.g. double) numeric values can be compared.
+But not string and int, or boolean and string/int.
+
+Remember,  "group by" is filtered using "having" and not "where".
+
+Note FETCH comes after JOIN.
+Hence LEFT JOIN FETCH, which is same as LEFT OUTER JOIN FETCH
+
