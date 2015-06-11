@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<persistence version="1.0"
+<persistence version="2.0"
 	xmlns="http://java.sun.com/xml/ns/persistence">
 	<persistence-unit name="JpaCert" transaction-type="RESOURCE_LOCAL">
 		<exclude-unlisted-classes />
+		<validation-mode>CALLBACK</validation-mode>
 		<properties>
-			<property name="javax.persistence.jdbc.driver" value="org.h2.Driver" />
+			<property name="javax.persistence.jdbc.driver" value="com.p6spy.engine.spy.P6SpyDriver" />
 			<property name="javax.persistence.jdbc.url"
-				value="jdbc:h2:/var/tmp/h2/jpacert;AUTO_SERVER=TRUE" />
+				value="jdbc:p6spy:h2:/var/tmp/h2/jpacert;AUTO_SERVER=TRUE" />
 			<property name="javax.persistence.jdbc.user" value="sa" />
 			<property name="javax.persistence.jdbc.password" value="" />
 			<property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect" />
