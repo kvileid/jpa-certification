@@ -1,7 +1,5 @@
 package no.kvileid.jpa;
 
-import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,16 +9,12 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
-import org.hibernate.EmptyInterceptor;
-import org.hibernate.EntityMode;
 import org.hibernate.boot.registry.classloading.internal.ClassLoaderServiceImpl;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.jpa.AvailableSettings;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 import org.hibernate.tool.hbm2ddl.SchemaExport;
-
-import sun.misc.Unsafe;
 
 public class PersistenceUtil {
     private static EntityManager entityManager;
@@ -40,6 +34,12 @@ public class PersistenceUtil {
         entityManager.getTransaction().commit();
     }
 
+    public static void save(Object o) {
+        beginTransaction();
+        entityManager.persist(o);
+        commitTransaction();
+    }
+    
     public static void closeSession() {
         // Closing entityManagerFactory required due to bug in Hibernate, see
         // http://stackoverflow.com/questions/21645516/program-using-hibernate-does-not-terminate
@@ -53,14 +53,14 @@ public class PersistenceUtil {
     }
 
     public static EntityManager reinitialise(Class<?>... entityClasses) {
-        EntityManagerFactory factory = createFactory(entityClasses);
-        entityManager = factory.createEntityManager();
+        entityManager = createFactory(entityClasses).createEntityManager();
         return entityManager;
     }
     
     private static EntityManagerFactory createFactory(Class<?>... entityClasses) {
         Map<String, Object> props = new HashMap<>();
         props.put(AvailableSettings.LOADED_CLASSES, Arrays.asList(entityClasses));
+        props.put(AvailableSettings.INTERCEPTOR, "no.kvileid.jpa.MyInterceptor");
         return Persistence.createEntityManagerFactory("JpaCert", props);
     }
 
@@ -91,31 +91,4 @@ public class PersistenceUtil {
         entityManager.clear();
     }
     
-    public static class MyInterceptor extends EmptyInterceptor {
-        @Override
-        public Object instantiate(String entityName, EntityMode entityMode, Serializable id) {
-            return allocateInstance(entityName);
-        }
-
-        private Object allocateInstance(String entityName) {
-            try {
-            Class<?> clazz = Class.forName(entityName);
-            return getUnsafe().allocateInstance(clazz);
-            } catch (InstantiationException |  ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        
-        private Unsafe getUnsafe() {
-            try {
-
-                Field singleoneInstanceField = Unsafe.class.getDeclaredField("theUnsafe");
-                singleoneInstanceField.setAccessible(true);
-                return (Unsafe) singleoneInstanceField.get(null);
-
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
 }

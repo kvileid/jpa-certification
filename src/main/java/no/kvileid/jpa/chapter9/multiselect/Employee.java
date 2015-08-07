@@ -46,7 +46,6 @@ public class Employee {
                 System.out.println(o);
             }
         }
-
         CriteriaQuery<Tuple> c2 = cb.createTupleQuery();
         Root<Employee> emp2 = c2.from(Employee.class);
         c2.multiselect(emp2.get("name"), emp2.get("salary"), emp2.get("id"));
